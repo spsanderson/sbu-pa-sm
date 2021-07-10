@@ -13,13 +13,19 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+    echo = TRUE,
+    message = F,
+    warning = F,
+    paged.print = FALSE
+)
 ```
 
 ```{r run_main_script, include=FALSE, echo=FALSE, warning=FALSE}
-source("00_Scripts/main.R")
+source("../00_Scripts/main.R")
 ```
 
 # Purpose
 
-The purpose of this document is to illustrate time series analysis and forecasting. We will use a simulated dataset to analyze things like visits, discharges and payments.
+The purpose of this document is to illustrate time series analysis and forecasting. We will use a simulated dataset to analyze things like visits, discharges and payments. To perform these analyses we will be following the `modeltime` workflow. This report will be broken down into sections that follow that same workflow.
+
