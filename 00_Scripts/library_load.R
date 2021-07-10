@@ -9,6 +9,13 @@ function(){
         , "dplyr"
         , "tibble"
         , "tidyr"
+        , "timetk"
+        , "modeltime"
+        , "modeltime.ensemble"
+        , "modeltime.resample"
+        , "tidyquant"
+        , "h2o"
+        , "modeltime.h2o"
     )
     
 }
