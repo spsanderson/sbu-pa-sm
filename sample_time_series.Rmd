@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r run_main_script, include=FALSE, echo=FALSE, warning=FALSE}
-source("../00_Scripts/main.R")
+source("00_Scripts/main.R")
 ```
 
 # Purpose
