@@ -1,0 +1,25 @@
+---
+title: "Sample Time Series"
+author: "Steven P. Sanderson II, MPH"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+    highlight: tango
+    theme: flatly
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r run_main_script, include=FALSE, echo=FALSE, warning=FALSE}
+source("00_Scripts/main.R")
+```
+
+# Purpose
+
+The purpose of this document is to illustrate time series analysis and forecasting. We will use a simulated dataset to analyze things like visits, discharges and payments.
