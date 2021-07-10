@@ -17,6 +17,7 @@ function(){
         , "h2o"
         , "modeltime.h2o"
         , "fs"
+        , "healthyR.data"
     )
     
 }

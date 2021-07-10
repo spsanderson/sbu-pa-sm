@@ -510,6 +510,13 @@
       "Repository": "CRAN",
       "Hash": "aa8ad570d6c1662de36ccbe09b67d473"
     },
+    "healthyR.data": {
+      "Package": "healthyR.data",
+      "Version": "1.0.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "082f6b51c1b57aa625c9a6aeb35614dd"
+    },
     "hms": {
       "Package": "hms",
       "Version": "1.1.0",
