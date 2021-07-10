@@ -22,6 +22,7 @@ function(){
         , "fs"
         , "healthyR.data"
         , "skimr"
+        , "tidymodels"
     )
     
 }
