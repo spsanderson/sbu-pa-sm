@@ -29,3 +29,11 @@ source("00_Scripts/main.R")
 
 The purpose of this document is to illustrate time series analysis and forecasting. We will use a simulated dataset to analyze things like visits, discharges and payments. To perform these analyses we will be following the `modeltime` workflow. This report will be broken down into sections that follow that same workflow.
 
+# Data
+
+Lets take a look at our data and see what it has.
+
+```{r data_view}
+df_tbl %>%
+  glimpse()
+```
