@@ -11,10 +11,10 @@ data_create <- function() {
             visit_end_date_time,
             total_charge_amount,
             total_adjustment_amount,
-            total_amount_due,
             total_payment_amount,
             payer_grouping,
-            service_line
+            service_line,
+            ip_op_flag 
         ) %>%
         mutate(
             adm_date = as.Date(visit_start_date_time),

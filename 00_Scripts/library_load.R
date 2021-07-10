@@ -21,6 +21,7 @@ function(){
         , "modeltime.h2o"
         , "fs"
         , "healthyR.data"
+        , "skimr"
     )
     
 }
