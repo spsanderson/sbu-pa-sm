@@ -16,6 +16,7 @@ function(){
         , "tidyquant"
         , "h2o"
         , "modeltime.h2o"
+        , "fs"
     )
     
 }
