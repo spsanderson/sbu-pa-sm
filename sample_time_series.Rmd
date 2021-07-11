@@ -243,3 +243,58 @@ forecast_tbl <- full_tbl %>%
     filter(is.na(value))
 forecast_tbl
 ```
+
+# Train / Test Split
+
+## Split into Train / Test Sets
+
+- Start with `data_prepared_tbl`
+- Use `time_series_split()` to create a single time series split. 
+    - Set `assess = horizon` to get the last 14-weeks of data as testing data. 
+    - Set `cumulative = TRUE` to use all of the previous data as training data. 
+- Save the object as `splits`
+
+```{r}
+splits <- data_prepared_tbl %>% 
+    time_series_split(assess = horizon, cumulative = TRUE)
+```
+
+# Feature Engineering
+
+## Create a Preprocessing recipe
+
+Make a preprocessing recipe using `recipe()`. Note - It may help to `prep()` and `juice()` your recipe to see the effect of your transformations. 
+
+- Start with `recipe()` using "value ~ ." and `data = training(splits)`
+- Add the following steps:
+    - `step_timeseries_signature()` using the date feature
+    - Remove any newly created features that:
+        - Contain ".iso"
+        - End with "xts"
+        - Contain "day", "hour", "minute", "second" or "am.pm" (because this is a weekly dataset and these features won't add any predictive value)
+    - Normalize all numeric data except for "value" (the target) with `step_normalize()`.
+    - Dummy all categorical features with `step_dummy()`. Set `one_hot = TRUE`.
+    - Add a fourier series at periods 7 and 14. Set K = 2 for both. 
+
+```{r}
+recipe_spec_base <- recipe(value ~ ., data = training(splits) %>%
+                             arrange(lag_ip_op_flag, payer_grouping, dsch_date)) %>%
+    
+    # Time Series Signature
+    step_timeseries_signature(dsch_date) %>%
+    step_rm(matches("(iso)|(xts)|(hour)|(minute)|(second)|(am.pm)")) %>%
+    
+    # Standardization
+    step_normalize(matches("(index.num)|(year)|(yday)")) %>%
+    
+    # Dummy Encoding (One Hot Encoding)
+    step_dummy(all_nominal(), one_hot = TRUE) %>%
+    
+    # Fourier - 4 Week ACF
+    step_fourier(dsch_date, period = c(7, 14, 52), K = 2)
+
+recipe_spec_base %>% 
+  prep() %>% 
+  juice() %>% 
+  glimpse()
+```
