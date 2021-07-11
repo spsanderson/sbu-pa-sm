@@ -75,14 +75,37 @@ transactions_monthly_tbl <- df_tbl %>%
   ungroup()
 
 transactions_monthly_tbl
+```
 
+# Visualizations
+
+## Visualize Discharges
+
+Use `plot_time_series()` to visualize the discharges. 
+
+- Look for outliers & any data issues
+- Try out a `log()` transformation to see the effect on the time series
+
+```{r monthly_ts}
 transactions_monthly_tbl %>%
   plot_time_series(
     .date_var     = dsch_date
     , .color_var  = ip_op_flag
     , .facet_vars = payer_grouping
     , .facet_ncol = 4
-    , .value      = value
+    , .value      = log(value)
     , .smooth     = FALSE
   )
+```
+
+## Visualize ACF
+
+Visualize the ACF using `plot_acf_diagnostics()` using a `log()` transformation. Look for:
+
+- Any frequencies we can include?
+- Any lags we can include? (Hint - What is our forecast horizon?)
+
+```{r}
+transactions_monthly_tbl %>% 
+    plot_acf_diagnostics(dsch_date, log(value))
 ```
