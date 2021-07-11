@@ -277,8 +277,14 @@ Make a preprocessing recipe using `recipe()`. Note - It may help to `prep()` and
     - Add a fourier series at periods 7 and 14. Set K = 2 for both. 
 
 ```{r}
-recipe_spec_base <- recipe(value ~ ., data = training(splits) %>%
-                             arrange(lag_ip_op_flag, payer_grouping, dsch_date)) %>%
+recipe_spec_base <- recipe(
+  value ~ .
+  , data = training(splits) %>%
+    arrange(
+      lag_ip_op_flag
+      , payer_grouping
+      , dsch_date)
+  ) %>%
     
     # Time Series Signature
     step_timeseries_signature(dsch_date) %>%
