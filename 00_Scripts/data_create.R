@@ -4,6 +4,9 @@
 data_create <- function() {
     df_tbl <- healthyR_data %>%
         as_tibble() %>%
+        filter(
+            payer_grouping %in% c("Blue Cross", "Commercial")
+        ) %>%
         select(
             mrn,
             visit_id,
