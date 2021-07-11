@@ -17,7 +17,9 @@ knitr::opts_chunk$set(
     echo = TRUE,
     message = F,
     warning = F,
-    paged.print = FALSE
+    paged.print = FALSE,
+    out.width = "100%",
+    out.height = "100%"
 )
 ```
 
@@ -29,11 +31,58 @@ source("00_Scripts/main.R")
 
 The purpose of this document is to illustrate time series analysis and forecasting. We will use a simulated dataset to analyze things like visits, discharges and payments. To perform these analyses we will be following the `modeltime` workflow. This report will be broken down into sections that follow that same workflow.
 
-# Data
+# Data View
 
 Lets take a look at our data and see what it has.
 
 ```{r data_view}
 df_tbl %>%
   glimpse()
+```
+
+```{r skimr}
+skim(df_tbl)
+```
+
+# Preparing Data
+
+Our objectives are to:
+
+- Aggregate data to common time-stamps
+- Apply any transformations
+- Detect any lags & add rolling features
+- Create a Full Data Set: Adding Future observations, lags, and external regressors
+
+Our forecasting will focus on a grouped forecast where we are going to forecast the number of discharges by inpatient/outpatient visit type and by payer grouping.
+
+We are going to do this on a weekly scale.
+
+## Aggregate discharges by IP/OP and Payer Grouping by Month
+
+1. Start with `df_tbl`
+2. Use `summarise_by_time()` with `.by = "month"`, and `n()` the visits.
+3. Save as a new variable called `transactions_monthly_tbl`
+
+```{r transactions_monthly_tbl}
+transactions_monthly_tbl <- df_tbl %>%
+  filter(payer_grouping != "?") %>%
+  group_by(ip_op_flag, payer_grouping) %>%
+  summarise_by_time(
+    .date_var = dsch_date
+    , .by     = "month"
+    , value   = n()
+  ) %>%
+  ungroup()
+
+transactions_monthly_tbl
+
+transactions_monthly_tbl %>%
+  plot_time_series(
+    .date_var     = dsch_date
+    , .color_var  = ip_op_flag
+    , .facet_vars = payer_grouping
+    , .facet_ncol = 4
+    , .value      = value
+    , .smooth     = FALSE
+  )
 ```
