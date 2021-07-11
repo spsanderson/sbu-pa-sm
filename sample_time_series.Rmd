@@ -71,8 +71,7 @@ transactions_weekly_tbl <- df_tbl %>%
     .date_var = dsch_date
     , .by     = "week"
     , value   = n()
-  ) %>%
-  ungroup()
+  )
 
 transactions_weekly_tbl
 ```
@@ -88,7 +87,6 @@ Use `plot_time_series()` to visualize the discharges.
 
 ```{r weekly_ts}
 transactions_weekly_tbl %>%
-  group_by(ip_op_flag, payer_grouping) %>%
   plot_time_series(
     .date_var     = dsch_date
     , .color_var  = payer_grouping
@@ -107,7 +105,123 @@ Visualize the ACF using `plot_acf_diagnostics()` using a `log()` transformation.
 - Any lags we can include? (Hint - What is our forecast horizon?)
 
 ```{r}
-transactions_weekly_tbl %>% 
-  group_by(ip_op_flag) %>%
+transactions_weekly_tbl %>%
+  ungroup() %>%
   plot_acf_diagnostics(dsch_date, log(value))
+```
+
+## Log-Standardize Revenue (Target)
+
+- Start with `transactions_weekly_tbl`
+- Apply log-standardization:
+    - Apply Log transformation using `log()`
+    - Apply standardization to mean = 0, sd = 1 using `standardize_vec()`
+- Store the resulting data as `transactions_trans_weekly_tbl`
+
+```{r, message = TRUE}
+transactions_trans_weekly_tbl <- transactions_weekly_tbl %>%
+  mutate(value = log(value)) %>%
+  mutate(value = standardize_vec(value))
+
+mean_a <- 3.08875144281386
+sd_a   <- 0.367674566335952
+mean_b <- 1.83577890003612
+sd_b   <- 0.545791389303644
+mean_c <- 3.15330156564258
+sd_c   <- 0.302421031976675
+mean_d <- 1.59951348649452
+sd_d   <- 0.514947645076106
+```
+
+Visualize the log-standardized transactions using `plot_time_series()`. This confirms the transformation was performed successfully. 
+
+```{r}
+transactions_trans_weekly_tbl %>%
+      plot_time_series(
+    .date_var     = dsch_date
+    , .color_var  = payer_grouping
+    , .facet_vars = payer_grouping
+    , .facet_ncol = 2
+    , .value      = value
+    , .smooth     = FALSE
+  )
+```
+
+We'll use these parameters to create our "full dataset". We've selected an 14-week forecast horizon. Our lag period is 14 weeks and we'll try out a few rolling averages at various aggregations. 
+
+```{r}
+horizon         <- 14
+lag_period      <- 14
+rolling_periods <- c(7, 14, 28, 52)
+```
+
+## Prepare the full data
+
+1. Start with `transactions_weekly_tbl`
+2. __Add the future window:__ Use `bind_rows()` and `future_frame()` to extend the data frame `.length_out = horizon`.
+3. __Add autocorrelated lags:__ Use `tk_augment_lags()` to add a `.lags = lag_period`
+4. __Add rolling features from our lag__: Use `tk_agument_slidify()` to add `.period = rolling_periods`. Use `mean` as the rolling function. Make sure to "center" with "partial" windows. 
+5. Rename any columns that contain "lag". Modify to start with "lag_"
+6. Save the output as `full_tbl`.
+
+
+```{r}
+full_tbl <- transactions_trans_weekly_tbl %>%
+    
+    # Add future window
+    bind_rows(
+        future_frame(
+          .data         = .
+          , .date_var   = dsch_date
+          , .length_out = horizon
+        )
+    ) %>%
+    
+    # Add autocorrelated lags
+    tk_augment_lags(value, .lags = lag_period) %>%
+    
+    # Add rolling features
+    tk_augment_slidify(
+        .value   = value_lag14,
+        .f       = mean, 
+        .period  = rolling_periods,
+        .align   = "center",
+        .partial = TRUE
+    ) %>%
+    
+    # Rename columns
+    rename_with(
+      .cols = contains("lag")
+      , .fn = ~ str_c("lag_", .)
+    ) %>%
+  select(dsch_date, everything())
+
+full_tbl %>% 
+  glimpse()
+```
+
+## Visualize the Full Data
+
+Visualize the features, and review what you see. 
+
+1. Start with `full_tbl`
+2. `pivot_longer` every column except "dsch_date"
+3. Use `plot_time_series()` to visualize the time series coloring by "name". 
+
+Review the visualization selecting one feature at a time and answering the following questions:
+    
+    - Do the rolling lags present any issues? 
+    - Which rolling lag captures the trend the best?
+    - Do you expect either of the Product Events features to help?
+
+```{r}
+full_tbl %>%
+  pivot_longer(cols = -c(dsch_date, lag_ip_op_flag, payer_grouping)) %>%
+  plot_time_series(
+    dsch_date
+    , value
+    , name
+    , .smooth = FALSE
+    , .facet_ncol = 2
+  )
 ```
