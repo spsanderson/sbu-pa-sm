@@ -107,6 +107,7 @@ Visualize the ACF using `plot_acf_diagnostics()` using a `log()` transformation.
 - Any lags we can include? (Hint - What is our forecast horizon?)
 
 ```{r}
-transactions_monthly_tbl %>% 
-    plot_acf_diagnostics(dsch_date, log(value))
+transactions_weekly_tbl %>% 
+  group_by(ip_op_flag) %>%
+  plot_acf_diagnostics(dsch_date, log(value))
 ```
