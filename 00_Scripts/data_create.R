@@ -19,6 +19,11 @@ data_create <- function() {
         mutate(
             adm_date = as.Date(visit_start_date_time),
             dsch_date = as.Date(visit_end_date_time)
+        ) %>%
+        filter_by_time(
+            .date_var = dsch_date
+            , .start_date = "2012"
+            , .end_date = "2019"
         )
     
     return(df_tbl)
