@@ -57,24 +57,24 @@ Our forecasting will focus on a grouped forecast where we are going to forecast 
 
 We are going to do this on a weekly scale.
 
-## Aggregate discharges by IP/OP and Payer Grouping by Month
+## Aggregate discharges by IP/OP and Payer Grouping by Week
 
 1. Start with `df_tbl`
-2. Use `summarise_by_time()` with `.by = "month"`, and `n()` the visits.
-3. Save as a new variable called `transactions_monthly_tbl`
+2. Use `summarise_by_time()` with `.by = "week"`, and `n()` the visits.
+3. Save as a new variable called `transactions_weekly_tbl`
 
-```{r transactions_monthly_tbl}
-transactions_monthly_tbl <- df_tbl %>%
+```{r transactions_weekly_tbl}
+transactions_weekly_tbl <- df_tbl %>%
   filter(payer_grouping != "?") %>%
   group_by(ip_op_flag, payer_grouping) %>%
   summarise_by_time(
     .date_var = dsch_date
-    , .by     = "month"
+    , .by     = "week"
     , value   = n()
   ) %>%
   ungroup()
 
-transactions_monthly_tbl
+transactions_weekly_tbl
 ```
 
 # Visualizations
@@ -86,13 +86,14 @@ Use `plot_time_series()` to visualize the discharges.
 - Look for outliers & any data issues
 - Try out a `log()` transformation to see the effect on the time series
 
-```{r monthly_ts}
-transactions_monthly_tbl %>%
+```{r weekly_ts}
+transactions_weekly_tbl %>%
+  group_by(ip_op_flag, payer_grouping) %>%
   plot_time_series(
     .date_var     = dsch_date
-    , .color_var  = ip_op_flag
+    , .color_var  = payer_grouping
     , .facet_vars = payer_grouping
-    , .facet_ncol = 4
+    , .facet_ncol = 2
     , .value      = log(value)
     , .smooth     = FALSE
   )
