@@ -296,7 +296,7 @@ recipe_spec_base <- recipe(
     # Dummy Encoding (One Hot Encoding)
     step_dummy(all_nominal(), one_hot = TRUE) %>%
     
-    # Fourier - 4 Week ACF
+    # Fourier - 7 Week ACF
     step_fourier(dsch_date, period = c(7, 14, 52), K = 2)
 
 recipe_spec_base %>% 
