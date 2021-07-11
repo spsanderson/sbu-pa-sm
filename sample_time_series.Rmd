@@ -326,3 +326,39 @@ data_prepared_tbl %>%
         .facet_ncol   = 2
     )
 ```
+
+### LM Model Spec
+
+Create a model specification for linear regression:
+
+- Use `linear_reg()` function
+- Use `set_engine("lm")`
+- Store as `model_spec_lm`
+
+```{r}
+model_spec_lm <- linear_reg() %>%
+    set_engine("lm")
+```
+
+### Recipe Spec - Spline
+
+Create a recipe for the spline model. 
+
+1. Start with `recipe_spec_base`
+2. Add a step to remove the "dsch_date" feature. We don't need this for LM models. 
+3. Add a step for the natural spline. Set `deg_free = 3`
+4. Remove any features that begin with "lag_"
+5. Store your updated recipe as `recipe_spec_1_spline`
+6. Glimpse the output. Were the features adjusted correctly?
+
+```{r}
+recipe_spec_1_spline <- recipe_spec_base %>%
+    step_rm(dsch_date) %>%
+    step_ns(ends_with("index.num"), deg_free = 3) %>%
+    step_rm(starts_with("lag_"))
+
+recipe_spec_1_spline %>% 
+  prep() %>% 
+  juice() %>% 
+  glimpse()
+```
