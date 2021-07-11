@@ -225,3 +225,21 @@ full_tbl %>%
     , .facet_ncol = 2
   )
 ```
+
+# Model Data / Forecast Data Split
+
+Create a `data_prepared_tbl` by filtering `full_tbl` where "value" is non-missing. 
+
+```{r}
+data_prepared_tbl <- full_tbl %>%
+    filter(!is.na(value))
+data_prepared_tbl
+```
+
+Create a `forecast_tbl` by filtering `full_tbl` where "value" is missing. 
+
+```{r}
+forecast_tbl <- full_tbl %>%
+    filter(is.na(value))
+forecast_tbl
+```
