@@ -304,3 +304,25 @@ recipe_spec_base %>%
   juice() %>% 
   glimpse()
 ```
+
+# Modeling
+
+## Spline Model
+
+### Visualize
+
+Use `plot_time_series_regression` to test out several natural splines:
+
+- Use .formula to try out `splines::ns()` with degrees of freedom 1, 2, 3, and 4. 
+
+Which value of `df` would you select?
+
+```{r}
+data_prepared_tbl %>%
+    plot_time_series_regression(
+        .date_var     = dsch_date,
+        .formula      = value ~ splines::ns(dsch_date, df = 3),
+        .show_summary = FALSE,
+        .facet_ncol   = 2
+    )
+```
