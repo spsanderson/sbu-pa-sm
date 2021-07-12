@@ -362,3 +362,286 @@ recipe_spec_1_spline %>%
   juice() %>% 
   glimpse()
 ```
+
+### Workflow - Spline
+
+Create a workflow for the linear regression and preprocessing recipe:
+
+- Start with a `workflow()`
+- Use `add_model()` to add the `model_spec_lm`
+- Use `add_recipe()` to add the `recipe_spec_1_spline`
+- Store as `workflow_fit_lm_1_spline`
+
+
+```{r}
+workflow_fit_lm_1_spline <- workflow() %>%
+    add_model(model_spec_lm) %>%
+    add_recipe(recipe_spec_1_spline) %>%
+    fit(
+      training(splits) %>%
+        arrange(
+          lag_ip_op_flag
+          , payer_grouping
+          , dsch_date)
+      )
+
+workflow_fit_lm_1_spline %>% 
+  pull_workflow_fit() %>% 
+  pluck("fit") %>% 
+  summary()
+```
+
+## Rolling Lag Model
+
+### Recipe Spec - Lag
+
+Create a recipe for the spline model. 
+
+1. Start with `recipe_spec_base`
+2. Add a step to remove the "purchased_at" feature. We don't need this for LM models. 
+3. Remove missing values in any column that starts with "lag_"
+4. Store your updated recipe as `recipe_spec_2_lag`
+5. Glimpse the output. Were the features adjusted correctly?
+
+```{r}
+recipe_spec_2_lag <- recipe_spec_base %>%
+    step_rm(dsch_date) %>%
+    step_naomit(starts_with("lag_"))
+
+recipe_spec_2_lag %>% 
+  prep() %>% 
+  juice() %>% 
+  glimpse()
+```
+
+### Workflow - Lag
+
+Save the workflow as `workflow_fit_lm_2_lag`.
+
+```{r}
+workflow_fit_lm_2_lag <- workflow() %>%
+    add_model(model_spec_lm) %>%
+    add_recipe(recipe_spec_2_lag) %>%
+    fit(
+      training(splits)  %>%
+        arrange(
+          lag_ip_op_flag
+          , payer_grouping
+          , dsch_date
+        )
+    )
+
+workflow_fit_lm_2_lag %>% 
+  pull_workflow_fit() %>% 
+  pluck("fit") %>% 
+  summary()
+```
+
+# Modeltime
+
+### Make a Modeltime Table
+
+Start by making a modeltime table:
+
+- Use `modeltime_table()` to store your fitted workflows
+- Save as `model_tbl`
+
+```{r}
+model_tbl <- modeltime_table(
+    workflow_fit_lm_1_spline,
+    workflow_fit_lm_2_lag
+)
+model_tbl
+```
+
+As a precautionary measure, please refit the models using `modeltime_refit()`. This prevents models that can go bad over time because of software changes. 
+
+```{r}
+# Refitting makes sure your models work over time. 
+model_tbl <- model_tbl %>%
+    modeltime_refit(training(splits)  %>%
+        arrange(
+          lag_ip_op_flag
+          , payer_grouping
+          , dsch_date
+        ))
+```
+
+### Calibrate the Table
+
+Use testing data to calibrate the model:
+
+- Start with `model_tbl`
+- Use `modeltime_calibrate()` to calibrate the model using `testing(splits)` (out-of-sample data)
+- Store the result as `calibration_tbl`
+
+```{r}
+calibration_tbl <- model_tbl %>%
+    modeltime_calibrate(
+      training(splits)  %>%
+        arrange(
+          lag_ip_op_flag
+          , payer_grouping
+          , dsch_date
+        )
+    )
+calibration_tbl
+```
+
+### Calculate the Accuracy
+
+Use `modeltime_accuracy()` to calculate the accuracy metrics.
+
+```{r}
+calibration_tbl %>% modeltime_accuracy()
+```
+
+### Visualize the Model Forecast
+
+- Use `modeltime_forecast()`:
+    - Set `new_data = testing(splits)`
+    - Set `actual_data = data_prepared_tbl`
+- Pipe the result into `plot_modeltime_forecast()`
+
+```{r}
+calibration_tbl %>%
+    modeltime_forecast(
+        new_data    = testing(splits) %>%
+        arrange(
+          lag_ip_op_flag
+          , payer_grouping
+          , dsch_date
+        ),
+        actual_data = data_prepared_tbl
+    ) %>%
+    plot_modeltime_forecast()
+```
+
+
+Forecasting thoughts:
+
+- What can you say about the Rolling Lag Model?
+- What might we be able to do to correct the model? (HINT: Try removing features in the lag model - what happens?)
+
+# Forecast Future Data
+
+## Refit the Model
+
+- Start with the `calibration_tbl`
+- Use `modeltime_refit()` refit the model on the `data_prepared_tbl` dataset
+
+```{r}
+refit_tbl <- calibration_tbl %>%
+    modeltime_refit(data = data_prepared_tbl)
+```
+
+
+## Forecast
+
+1. Start with `refit_tbl`
+2. Use `modeltime_forecast()` to forecast the `new_data = forecast_tbl`. Use `data_prepared_tbl` as the actual data. 
+3. Plot the forecast using `plot_modeltime_forecast()`
+
+```{r}
+refit_tbl %>%
+    modeltime_forecast(new_data    = forecast_tbl,
+                       actual_data = data_prepared_tbl) %>%
+    
+    
+    plot_modeltime_forecast()
+```
+
+## Invert Transformation
+
+Apply the inversion to the forecast plot:
+
+- Invert the standardization
+- Invert the log transformation
+
+```{r}
+refit_tbl %>%
+    modeltime_forecast(new_data    = forecast_tbl,
+                       actual_data = data_prepared_tbl) %>%
+    
+    # Invert Transformation
+    mutate(across(.value:.conf_hi, .fns = ~ standardize_inv_vec(
+        x    = .,
+        mean = c(mean_a, mean_b, mean_c, mean_d),
+        sd   = c(sd_a, sd_b, sd_c, sd_d)
+    ))) %>%
+    mutate(across(.value:.conf_hi, .fns = exp)) %>%
+    
+    plot_modeltime_forecast()
+```
+
+
+
+
+# Forecast Review
+
+## GLMNet - Elastic Net 
+
+```{r}
+workflow_fit_glmnet_2_lag <- workflow_fit_lm_2_lag %>%
+    update_model(
+        spec = linear_reg(penalty = 0.1, mixture = 0.5) %>%
+            set_engine("glmnet")
+    ) %>%
+    fit(training(splits)%>%
+        arrange(
+          lag_ip_op_flag
+          , payer_grouping
+          , dsch_date
+        ))
+```
+
+```{r}
+calibration_tbl <- modeltime_table(
+    workflow_fit_lm_1_spline,
+    workflow_fit_lm_2_lag,
+    workflow_fit_glmnet_2_lag
+) %>%
+    
+    update_model_description(.model_id = 1, "LM - Spline Recipe") %>%
+    update_model_description(2, "LM - Lag Recipe") %>%
+    update_model_description(3, "GLMNET - Lag Recipe") %>%
+    
+    modeltime_calibrate(testing(splits)%>%
+        arrange(
+          lag_ip_op_flag
+          , payer_grouping
+          , dsch_date
+        ))
+```
+
+```{r}
+calibration_tbl %>% modeltime_accuracy()
+```
+
+```{r}
+calibration_tbl %>%
+    modeltime_forecast(
+        new_data = testing(splits)%>%
+        arrange(
+          lag_ip_op_flag
+          , payer_grouping
+          , dsch_date
+        ),
+        actual_data = data_prepared_tbl
+    ) %>%
+    plot_modeltime_forecast()
+```
+
+```{r}
+refit_tbl <- calibration_tbl %>%
+    modeltime_refit(data = data_prepared_tbl)
+```
+
+```{r}
+refit_tbl %>%
+    modeltime_forecast(
+        new_data = forecast_tbl,
+        actual_data = data_prepared_tbl
+    ) %>%
+    plot_modeltime_forecast()
+```
