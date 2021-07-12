@@ -66,6 +66,7 @@ We are going to do this on a weekly scale.
 ```{r transactions_weekly_tbl}
 transactions_weekly_tbl <- df_tbl %>%
   filter(payer_grouping != "?") %>%
+  # make id = c(ip_op_flag, "_", payer_grouping)
   group_by(ip_op_flag, payer_grouping) %>%
   summarise_by_time(
     .date_var = dsch_date
