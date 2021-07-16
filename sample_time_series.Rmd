@@ -27,6 +27,15 @@ knitr::opts_chunk$set(
 source("00_Scripts/main.R")
 ```
 
+```{r parallel}
+registerDoFuture()
+n_cores <- parallel::detectCores() - 1
+plan(
+  strategy = cluster,
+  workers = parallel::makeCluster(n_cores) 
+)
+```
+
 # Purpose
 
 The purpose of this document is to illustrate time series analysis and forecasting. We will use a simulated dataset to analyze things like visits, discharges and payments. To perform these analyses we will be following the `modeltime` workflow. This report will be broken down into sections that follow that same workflow.
@@ -66,13 +75,20 @@ We are going to do this on a weekly scale.
 ```{r transactions_weekly_tbl}
 transactions_weekly_tbl <- df_tbl %>%
   filter(payer_grouping != "?") %>%
-  # make id = c(ip_op_flag, "_", payer_grouping)
-  group_by(ip_op_flag, payer_grouping) %>%
+  mutate(id = str_c(ip_op_flag, payer_grouping, sep = "_")) %>%
+  mutate(id = as_factor(id)) %>%
+  group_by(id) %>%
   summarise_by_time(
     .date_var = dsch_date
     , .by     = "week"
     , value   = n()
-  )
+  ) %>%
+  pad_by_time(
+    .date_var  = dsch_date,
+    .by        = "week",
+    .pad_value = 0
+  ) %>%
+  ungroup()
 
 transactions_weekly_tbl
 ```
@@ -90,11 +106,12 @@ Use `plot_time_series()` to visualize the discharges.
 transactions_weekly_tbl %>%
   plot_time_series(
     .date_var     = dsch_date
-    , .color_var  = payer_grouping
-    , .facet_vars = payer_grouping
+    , .color_var  = id
+    , .facet_vars = id
     , .facet_ncol = 2
     , .value      = log(value)
     , .smooth     = FALSE
+    , .interactive = FALSE
   )
 ```
 
@@ -107,7 +124,7 @@ Visualize the ACF using `plot_acf_diagnostics()` using a `log()` transformation.
 
 ```{r}
 transactions_weekly_tbl %>%
-  ungroup() %>%
+  group_by(id) %>%
   plot_acf_diagnostics(dsch_date, log(value))
 ```
 
@@ -121,13 +138,14 @@ transactions_weekly_tbl %>%
 
 ```{r, message = TRUE}
 transactions_trans_weekly_tbl <- transactions_weekly_tbl %>%
+  group_by(id) %>%
   mutate(value = log(value)) %>%
   mutate(value = standardize_vec(value))
 
-mean_a <- 3.08875144281386
-sd_a   <- 0.367674566335952
-mean_b <- 1.83577890003612
-sd_b   <- 0.545791389303644
+mean_b <- 3.08875144281386
+sd_b   <- 0.367674566335952
+mean_a <- 1.83577890003612
+sd_a   <- 0.545791389303644
 mean_c <- 3.15330156564258
 sd_c   <- 0.302421031976675
 mean_d <- 1.59951348649452
@@ -138,10 +156,10 @@ Visualize the log-standardized transactions using `plot_time_series()`. This con
 
 ```{r}
 transactions_trans_weekly_tbl %>%
-      plot_time_series(
+    plot_time_series(
     .date_var     = dsch_date
-    , .color_var  = payer_grouping
-    , .facet_vars = payer_grouping
+    , .color_var  = id
+    , .facet_vars = id
     , .facet_ncol = 2
     , .value      = value
     , .smooth     = FALSE
@@ -170,31 +188,33 @@ rolling_periods <- c(7, 14, 28, 52)
 full_tbl <- transactions_trans_weekly_tbl %>%
     
     # Add future window
-    bind_rows(
-        future_frame(
-          .data         = .
-          , .date_var   = dsch_date
-          , .length_out = horizon
-        )
-    ) %>%
+  group_by(id) %>%
+  bind_rows(
+    future_frame(
+      .data         = .
+      , .date_var   = dsch_date
+      , .length_out = horizon
+    )
+  ) %>%
     
-    # Add autocorrelated lags
-    tk_augment_lags(value, .lags = lag_period) %>%
-    
-    # Add rolling features
-    tk_augment_slidify(
-        .value   = value_lag14,
-        .f       = mean, 
-        .period  = rolling_periods,
-        .align   = "center",
-        .partial = TRUE
-    ) %>%
-    
-    # Rename columns
-    rename_with(
-      .cols = contains("lag")
-      , .fn = ~ str_c("lag_", .)
-    ) %>%
+  # Add autocorrelated lags
+  tk_augment_lags(value, .lags = lag_period) %>%
+  
+  # Add rolling features
+  tk_augment_slidify(
+      .value   = value_lag14,
+      .f       = mean, 
+      .period  = rolling_periods,
+      .align   = "center",
+      .partial = TRUE
+  ) %>%
+  
+  # Rename columns
+  rename_with(
+    .cols = contains("lag")
+    , .fn = ~ str_c("lag_", .)
+  ) %>%
+  ungroup() %>%
   select(dsch_date, everything())
 
 full_tbl %>% 
@@ -217,7 +237,8 @@ Review the visualization selecting one feature at a time and answering the follo
 
 ```{r}
 full_tbl %>%
-  pivot_longer(cols = -c(dsch_date, lag_ip_op_flag, payer_grouping)) %>%
+  pivot_longer(cols = -c(dsch_date, id)) %>%
+  group_by(id) %>%
   plot_time_series(
     dsch_date
     , value
