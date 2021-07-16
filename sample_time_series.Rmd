@@ -83,11 +83,6 @@ transactions_weekly_tbl <- df_tbl %>%
     , .by     = "week"
     , value   = n()
   ) %>%
-  pad_by_time(
-    .date_var  = dsch_date,
-    .by        = "week",
-    .pad_value = 0
-  ) %>%
   ungroup()
 
 transactions_weekly_tbl
