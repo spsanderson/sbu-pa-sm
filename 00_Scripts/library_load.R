@@ -3,9 +3,7 @@ function(){
     
     if(!require(pacman)){install.packages("pacman")}
     pacman::p_load(
-        "DBI"
-        , "odbc"
-        , "janitor"
+        "janitor"
         , "tidyverse"
         , "lubridate"
         , "timetk"
@@ -13,12 +11,13 @@ function(){
         , "modeltime.ensemble"
         , "modeltime.resample"
         , "tidyquant"
-        , "h2o"
-        , "modeltime.h2o"
         , "fs"
         , "healthyR.data"
         , "skimr"
         , "tidymodels"
+        , "future"
+        , "doFuture"
+        , "tictoc"
     )
     
 }
