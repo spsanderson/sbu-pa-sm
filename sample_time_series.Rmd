@@ -298,9 +298,9 @@ recipe_spec_base <- recipe(
   value ~ .
   , data = training(splits) %>%
     arrange(
-      lag_ip_op_flag
-      , payer_grouping
-      , dsch_date)
+      id
+      , dsch_date
+    )
   ) %>%
     
     # Time Series Signature
@@ -336,6 +336,7 @@ Which value of `df` would you select?
 
 ```{r}
 data_prepared_tbl %>%
+  group_by(id) %>%
     plot_time_series_regression(
         .date_var     = dsch_date,
         .formula      = value ~ splines::ns(dsch_date, df = 3),
@@ -396,10 +397,8 @@ workflow_fit_lm_1_spline <- workflow() %>%
     add_recipe(recipe_spec_1_spline) %>%
     fit(
       training(splits) %>%
-        arrange(
-          lag_ip_op_flag
-          , payer_grouping
-          , dsch_date)
+        group_by(id) %>%
+        arrange(id, dsch_date)
       )
 
 workflow_fit_lm_1_spline %>% 
@@ -442,8 +441,7 @@ workflow_fit_lm_2_lag <- workflow() %>%
     fit(
       training(splits)  %>%
         arrange(
-          lag_ip_op_flag
-          , payer_grouping
+          id
           , dsch_date
         )
     )
@@ -478,8 +476,7 @@ As a precautionary measure, please refit the models using `modeltime_refit()`. T
 model_tbl <- model_tbl %>%
     modeltime_refit(training(splits)  %>%
         arrange(
-          lag_ip_op_flag
-          , payer_grouping
+          id
           , dsch_date
         ))
 ```
@@ -496,11 +493,8 @@ Use testing data to calibrate the model:
 calibration_tbl <- model_tbl %>%
     modeltime_calibrate(
       training(splits)  %>%
-        arrange(
-          lag_ip_op_flag
-          , payer_grouping
-          , dsch_date
-        )
+        arrange(id, dsch_date)
+      , quite = FALSE
     )
 calibration_tbl
 ```
@@ -525,8 +519,7 @@ calibration_tbl %>%
     modeltime_forecast(
         new_data    = testing(splits) %>%
         arrange(
-          lag_ip_op_flag
-          , payer_grouping
+          id
           , dsch_date
         ),
         actual_data = data_prepared_tbl
