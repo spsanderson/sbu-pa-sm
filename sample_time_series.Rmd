@@ -135,7 +135,8 @@ transactions_weekly_tbl %>%
 transactions_trans_weekly_tbl <- transactions_weekly_tbl %>%
   group_by(id) %>%
   mutate(value = log(value)) %>%
-  mutate(value = standardize_vec(value))
+  mutate(value = standardize_vec(value)) %>%
+  ungroup()
 
 mean_b <- 3.08875144281386
 sd_b   <- 0.367674566335952
@@ -294,27 +295,26 @@ Make a preprocessing recipe using `recipe()`. Note - It may help to `prep()` and
     - Add a fourier series at periods 7 and 14. Set K = 2 for both. 
 
 ```{r}
-recipe_spec_base <- recipe(
-  value ~ .
-  , data = training(splits) %>%
-    arrange(
-      id
-      , dsch_date
-    )
-  ) %>%
+recipe_spec_base <- recipe(value ~ ., data = training(splits) %>%
+                             arrange(id, dsch_date)) %>%
+  step_mutate(ID = droplevels(id)) %>%
+  
+  # Time Series Signature
+  step_timeseries_signature(dsch_date) %>%
+  step_rm(matches("(iso)|(xts)|(hour)|(minute)|(second)|(am.pm)")) %>%
     
-    # Time Series Signature
-    step_timeseries_signature(dsch_date) %>%
-    step_rm(matches("(iso)|(xts)|(hour)|(minute)|(second)|(am.pm)")) %>%
+  # Standardization
+  step_normalize(matches("(index.num)|(year)|(yday)")) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  
+  # Near Zero Variance
+  step_nzv(all_numeric_predictors()) %>%
+  
+  # Dummy Encoding (One Hot Encoding)
+  step_dummy(all_nominal(), one_hot = TRUE)
     
-    # Standardization
-    step_normalize(matches("(index.num)|(year)|(yday)")) %>%
-    
-    # Dummy Encoding (One Hot Encoding)
-    step_dummy(all_nominal(), one_hot = TRUE) %>%
-    
-    # Fourier - 7 Week ACF
-    step_fourier(dsch_date, period = c(7, 14, 52), K = 2)
+  # Fourier - 7 Week ACF
+  #step_fourier(dsch_date, period = c(7, 14, 52), K = 2)
 
 recipe_spec_base %>% 
   prep() %>% 
@@ -393,13 +393,9 @@ Create a workflow for the linear regression and preprocessing recipe:
 
 ```{r}
 workflow_fit_lm_1_spline <- workflow() %>%
-    add_model(model_spec_lm) %>%
-    add_recipe(recipe_spec_1_spline) %>%
-    fit(
-      training(splits) %>%
-        group_by(id) %>%
-        arrange(id, dsch_date)
-      )
+  add_model(model_spec_lm) %>%
+  add_recipe(recipe_spec_1_spline) %>%
+  fit(training(splits))
 
 workflow_fit_lm_1_spline %>% 
   pull_workflow_fit() %>% 
@@ -438,13 +434,7 @@ Save the workflow as `workflow_fit_lm_2_lag`.
 workflow_fit_lm_2_lag <- workflow() %>%
     add_model(model_spec_lm) %>%
     add_recipe(recipe_spec_2_lag) %>%
-    fit(
-      training(splits)  %>%
-        arrange(
-          id
-          , dsch_date
-        )
-    )
+    fit(training(splits))
 
 workflow_fit_lm_2_lag %>% 
   pull_workflow_fit() %>% 
@@ -474,11 +464,7 @@ As a precautionary measure, please refit the models using `modeltime_refit()`. T
 ```{r}
 # Refitting makes sure your models work over time. 
 model_tbl <- model_tbl %>%
-    modeltime_refit(training(splits)  %>%
-        arrange(
-          id
-          , dsch_date
-        ))
+    modeltime_refit(training(splits))
 ```
 
 ### Calibrate the Table
@@ -492,10 +478,10 @@ Use testing data to calibrate the model:
 ```{r}
 calibration_tbl <- model_tbl %>%
     modeltime_calibrate(
-      training(splits)  %>%
-        arrange(id, dsch_date)
-      , quite = FALSE
+      new_data = testing(splits)
+      , id = "id"
     )
+
 calibration_tbl
 ```
 
@@ -504,7 +490,13 @@ calibration_tbl
 Use `modeltime_accuracy()` to calculate the accuracy metrics.
 
 ```{r}
-calibration_tbl %>% modeltime_accuracy()
+calibration_tbl %>% 
+    modeltime_accuracy(acc_by_id = FALSE) %>% 
+    table_modeltime_accuracy(.interactive = FALSE)
+
+calibration_tbl %>% 
+    modeltime_accuracy(acc_by_id = TRUE) %>% 
+    table_modeltime_accuracy(.interactive = FALSE)
 ```
 
 ### Visualize the Model Forecast
@@ -517,14 +509,12 @@ calibration_tbl %>% modeltime_accuracy()
 ```{r}
 calibration_tbl %>%
     modeltime_forecast(
-        new_data    = testing(splits) %>%
-        arrange(
-          id
-          , dsch_date
-        ),
-        actual_data = data_prepared_tbl
+        new_data    = testing(splits),
+        actual_data = bind_rows(training(splits), testing(splits)),
+        conf_by_id = TRUE
     ) %>%
-    plot_modeltime_forecast()
+  group_by(id) %>%
+  plot_modeltime_forecast(.facet_ncol = 2)
 ```
 
 
@@ -555,10 +545,10 @@ refit_tbl <- calibration_tbl %>%
 ```{r}
 refit_tbl %>%
     modeltime_forecast(new_data    = forecast_tbl,
-                       actual_data = data_prepared_tbl) %>%
-    
-    
-    plot_modeltime_forecast()
+                       actual_data = data_prepared_tbl,
+                       conf_by_id = TRUE) %>%
+  group_by(id) %>%
+  plot_modeltime_forecast(.facet_ncol = 2)
 ```
 
 ## Invert Transformation
@@ -571,7 +561,9 @@ Apply the inversion to the forecast plot:
 ```{r}
 refit_tbl %>%
     modeltime_forecast(new_data    = forecast_tbl,
-                       actual_data = data_prepared_tbl) %>%
+                       actual_data = data_prepared_tbl,
+                       conf_by_id = TRUE) %>%
+  group_by(id) %>%
     
     # Invert Transformation
     mutate(across(.value:.conf_hi, .fns = ~ standardize_inv_vec(
@@ -580,12 +572,9 @@ refit_tbl %>%
         sd   = c(sd_a, sd_b, sd_c, sd_d)
     ))) %>%
     mutate(across(.value:.conf_hi, .fns = exp)) %>%
-    
-    plot_modeltime_forecast()
+
+    plot_modeltime_forecast(.facet_ncol = 2)
 ```
-
-
-
 
 # Forecast Review
 
@@ -597,12 +586,7 @@ workflow_fit_glmnet_2_lag <- workflow_fit_lm_2_lag %>%
         spec = linear_reg(penalty = 0.1, mixture = 0.5) %>%
             set_engine("glmnet")
     ) %>%
-    fit(training(splits)%>%
-        arrange(
-          lag_ip_op_flag
-          , payer_grouping
-          , dsch_date
-        ))
+    fit(training(splits))
 ```
 
 ```{r}
@@ -616,30 +600,28 @@ calibration_tbl <- modeltime_table(
     update_model_description(2, "LM - Lag Recipe") %>%
     update_model_description(3, "GLMNET - Lag Recipe") %>%
     
-    modeltime_calibrate(testing(splits)%>%
-        arrange(
-          lag_ip_op_flag
-          , payer_grouping
-          , dsch_date
-        ))
+    modeltime_calibrate(testing(splits), id = "id")
 ```
 
 ```{r}
-calibration_tbl %>% modeltime_accuracy()
+calibration_tbl %>% 
+    modeltime_accuracy(acc_by_id = FALSE) %>% 
+    table_modeltime_accuracy(.interactive = FALSE)
+
+calibration_tbl %>% 
+    modeltime_accuracy(acc_by_id = TRUE) %>% 
+    table_modeltime_accuracy(.interactive = FALSE)
 ```
 
 ```{r}
 calibration_tbl %>%
     modeltime_forecast(
-        new_data = testing(splits)%>%
-        arrange(
-          lag_ip_op_flag
-          , payer_grouping
-          , dsch_date
-        ),
-        actual_data = data_prepared_tbl
+        new_data = testing(splits),
+        actual_data = data_prepared_tbl,
+        conf_by_id = TRUE
     ) %>%
-    plot_modeltime_forecast()
+  group_by(id) %>%
+  plot_modeltime_forecast(.facet_ncol = 2)
 ```
 
 ```{r}
@@ -651,7 +633,9 @@ refit_tbl <- calibration_tbl %>%
 refit_tbl %>%
     modeltime_forecast(
         new_data = forecast_tbl,
-        actual_data = data_prepared_tbl
+        actual_data = data_prepared_tbl,
+        conf_by_id = TRUE
     ) %>%
-    plot_modeltime_forecast()
+  group_by(id) %>%
+    plot_modeltime_forecast(.facet_ncol = 2)
 ```
