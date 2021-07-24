@@ -275,26 +275,39 @@ pre code {
 
 <div id="TOC">
 <ul>
-<li><a href="#business-understanding">1. Business Understanding</a></li>
-<li><a href="#data-understanding">2 Data understanding</a></li>
+<li><a href="#business-understanding">1 Business Understanding</a></li>
+<li><a href="#data-understanding">2 Data understanding</a>
+<ul>
+<li><a href="#import-data">2.1 Import Data</a></li>
+</ul></li>
 </ul>
 </div>
 
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>df_tbl <span class="ot">&lt;-</span> healthyR_data <span class="sc">%&gt;%</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span>mrn, <span class="sc">-</span>visit_id, <span class="sc">-</span>expected_length_of_stay, <span class="sc">-</span>length_of_stay_threshold, </span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>           <span class="sc">-</span>readmit_expectation) <span class="sc">%&gt;%</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="at">denial_flag =</span> readmit_flag)</span></code></pre></div>
 <div id="business-understanding" class="section level1">
-<h1>1. Business Understanding</h1>
+<h1>1 Business Understanding</h1>
 <p>In our example, the goal is to build a classification model to predict an account being denied by the insurance company or not. In particular, the model should learn from data and be able to predict whether account in a service line is going to be denied, given some predictor variables. Hence, we face a supervised learning situation and should use a classification model to predict the categorical outcomes (approved or denied). Furthermore, we use the F1-Score as a performance measure for our classification problem.</p>
 <p>Let’s assume that the model’s output will be fed to another analytics system, along with other data. This downstream system will determine whether it is worth investing in a given area or not. The data processing components (also called data pipeline) are shown in the figure below (you can use Google’s architectural templates to draw a data pipeline).</p>
 </div>
 <div id="data-understanding" class="section level1">
 <h1>2 Data understanding</h1>
 <p>In Data Understanding, you:</p>
-<pre><code>+ Import data
-+ Clean data</code></pre>
-<p>Format data properly Create new variables Get an overview about the complete data Split data into training and test set using stratified sampling Discover and visualize the data to gain insights 2.1 Import Data First of all, let’s import the data:</p>
+<ul>
+<li>Import data</li>
+<li>Clean data</li>
+<li>Format data properly</li>
+<li>Create new variables</li>
+<li>Get an overview about the complete data</li>
+<li>Split data into training and test set using stratified sampling</li>
+<li>Discover and visualize the data to gain insights</li>
+</ul>
+<div id="import-data" class="section level2">
+<h2>2.1 Import Data</h2>
+<p>First of all, let’s import the data:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>df_tbl <span class="ot">&lt;-</span> healthyR_data <span class="sc">%&gt;%</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="sc">-</span>mrn, <span class="sc">-</span>visit_id, <span class="sc">-</span>expected_length_of_stay, <span class="sc">-</span>length_of_stay_threshold, </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>           <span class="sc">-</span>readmit_expectation) <span class="sc">%&gt;%</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="at">denial_flag =</span> readmit_flag)</span></code></pre></div>
+</div>
 </div>
 
 
@@ -332,7 +345,7 @@ $(document).ready(function () {
 <!-- code folding -->
 <script>
 $(document).ready(function () {
-  window.initializeCodeFolding("hide" === "show");
+  window.initializeCodeFolding("show" === "show");
 });
 </script>
 
