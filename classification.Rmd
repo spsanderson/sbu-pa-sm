@@ -38,6 +38,14 @@ pacman::p_load(
 )
 ```
 
+```{r data, include=FALSE}
+df_tbl <- healthyR_data %>%
+    select(-mrn, -visit_id, -expected_length_of_stay, -length_of_stay_threshold, 
+           -readmit_expectation) %>%
+    rename(denial_flag = readmit_flag)
+```
+
+
 # Business Understanding
 
 In our example, the goal is to build a classification model to predict an account being denied by the insurance company or not. In particular, the model should learn from data and be able to predict whether account in a service line is going to be denied, given some predictor variables. Hence, we face a supervised learning situation and should use a classification model to predict the categorical outcomes (approved or denied). Furthermore, we use the F1-Score as a performance measure for our classification problem.
