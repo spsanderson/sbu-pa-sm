@@ -38,7 +38,7 @@ pacman::p_load(
 )
 ```
 
-```{r data, include=FALSE}
+```{r data}
 df_tbl <- healthyR_data %>%
     select(-mrn, -visit_id, -expected_length_of_stay, -length_of_stay_threshold, 
            -readmit_expectation) %>%
@@ -46,8 +46,23 @@ df_tbl <- healthyR_data %>%
 ```
 
 
-# Business Understanding
+# 1 Business Understanding
 
 In our example, the goal is to build a classification model to predict an account being denied by the insurance company or not. In particular, the model should learn from data and be able to predict whether account in a service line is going to be denied, given some predictor variables. Hence, we face a supervised learning situation and should use a classification model to predict the categorical outcomes (approved or denied). Furthermore, we use the F1-Score as a performance measure for our classification problem.
 
 Let’s assume that the model’s output will be fed to another analytics system, along with other data. This downstream system will determine whether it is worth investing in a given area or not. The data processing components (also called data pipeline) are shown in the figure below (you can use Google’s architectural templates to draw a data pipeline).
+
+# 2 Data understanding
+
+In Data Understanding, you:
+
+  + Import data
+  + Clean data
+  + Format data properly
+  + Create new variables
+  + Get an overview about the complete data
+  + Split data into training and test set using stratified sampling
+  + Discover and visualize the data to gain insights
+
+## 2.1 Import Data
+First of all, let’s import the data:
