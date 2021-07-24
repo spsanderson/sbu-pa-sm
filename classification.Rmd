@@ -1,5 +1,5 @@
 ---
-title: "Classification of Readmissions"
+title: "Classification of Denials"
 author: "Steven P. Sanderson II, MPH"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -23,22 +23,23 @@ knitr::opts_chunk$set(
 )
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r lib_load, include=FALSE}
+if(!require(pacman)){install.packages("pacman")}
+pacman::p_load(
+    "tidyverse",
+    "healthyR.data",
+    "gt",
+    "stringr",
+    "tidymodels",
+    "visdat",
+    "skimr",
+    "GGally",
+    "purrr"
+)
 ```
 
-## Including Plots
+# Business Understanding
 
-You can also embed plots, for example:
+In our example, the goal is to build a classification model to predict an account being denied by the insurance company or not. In particular, the model should learn from data and be able to predict whether account in a service line is going to be denied, given some predictor variables. Hence, we face a supervised learning situation and should use a classification model to predict the categorical outcomes (approved or denied). Furthermore, we use the F1-Score as a performance measure for our classification problem.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Let’s assume that the model’s output will be fed to another analytics system, along with other data. This downstream system will determine whether it is worth investing in a given area or not. The data processing components (also called data pipeline) are shown in the figure below (you can use Google’s architectural templates to draw a data pipeline).
