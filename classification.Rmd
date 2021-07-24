@@ -4,7 +4,7 @@ author: "Steven P. Sanderson II, MPH"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document:
-    code_folding: hide
+    code_folding: show
     highlight: tango
     theme: flatly
     toc: yes
@@ -38,14 +38,6 @@ pacman::p_load(
 )
 ```
 
-```{r data}
-df_tbl <- healthyR_data %>%
-    select(-mrn, -visit_id, -expected_length_of_stay, -length_of_stay_threshold, 
-           -readmit_expectation) %>%
-    rename(denial_flag = readmit_flag)
-```
-
-
 # 1 Business Understanding
 
 In our example, the goal is to build a classification model to predict an account being denied by the insurance company or not. In particular, the model should learn from data and be able to predict whether account in a service line is going to be denied, given some predictor variables. Hence, we face a supervised learning situation and should use a classification model to predict the categorical outcomes (approved or denied). Furthermore, we use the F1-Score as a performance measure for our classification problem.
@@ -65,4 +57,23 @@ In Data Understanding, you:
   + Discover and visualize the data to gain insights
 
 ## 2.1 Import Data
+
 First of all, let’s import the data:
+
+```{r data}
+df_tbl <- healthyR_data %>%
+    select(-mrn, -visit_id, -expected_length_of_stay, -length_of_stay_threshold, 
+           -readmit_expectation) %>%
+    rename(denial_flag = readmit_flag)
+```
+
+## 2.2 Clean data
+
+To get a first impression of the data we take a look at the top 4 rows:
+
+```{r head_data}
+
+housing_df %>% 
+  slice_head(n = 4) %>% 
+  gt()
+````
