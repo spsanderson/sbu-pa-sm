@@ -63,7 +63,7 @@ First of all, let’s import the data:
 ```{r data}
 df_tbl <- healthyR_data %>%
     select(-mrn, -visit_id, -expected_length_of_stay, -length_of_stay_threshold, 
-           -readmit_expectation) %>%
+           -readmit_expectation, -total_amount_due) %>%
     rename(denial_flag = readmit_flag)
 ```
 
@@ -73,7 +73,7 @@ To get a first impression of the data we take a look at the top 4 rows:
 
 ```{r head_data}
 
-housing_df %>% 
+df_tbl %>% 
   slice_head(n = 4) %>% 
   gt()
 ````
