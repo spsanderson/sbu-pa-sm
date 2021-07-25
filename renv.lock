@@ -34,6 +34,13 @@
       "Repository": "CRAN",
       "Hash": "b7b812ae4484d4bbf0a0baac72e8fc01"
     },
+    "GGally": {
+      "Package": "GGally",
+      "Version": "2.1.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "022f78c8698724b326f1838b1a98cafa"
+    },
     "GPfit": {
       "Package": "GPfit",
       "Version": "1.0-8",
@@ -1098,6 +1105,13 @@
       "Repository": "CRAN",
       "Hash": "8482bbeef0c194ac236aef7c51ee375f"
     },
+    "reshape": {
+      "Package": "reshape",
+      "Version": "0.8.8",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "0f4d941129e00ed34a7d192b1da7ccef"
+    },
     "riingo": {
       "Package": "riingo",
       "Version": "0.3.1",
@@ -1363,6 +1377,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "55e157e2aa88161bdb0754218470d204"
+    },
+    "visdat": {
+      "Package": "visdat",
+      "Version": "0.5.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "f62b960320b18fdffb2f0f76bb65dbaf"
     },
     "warp": {
       "Package": "warp",
