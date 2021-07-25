@@ -34,7 +34,8 @@ pacman::p_load(
     "visdat",
     "skimr",
     "GGally",
-    "purrr"
+    "purrr",
+    "DataExplorer"
 )
 ```
 
@@ -77,3 +78,30 @@ df_tbl %>%
   slice_head(n = 4) %>% 
   gt()
 ````
+
+## 2.3 Format data
+
+Next, we take a look at the data structure and check whether all data formats are correct:
+
+Numeric variables should be formatted as integers (int) or double precision floating point numbers (dbl).
+
+Categorical (nominal and ordinal) variables should usually be formatted as factors (fct) and not characters (chr). Especially, if they don’t have many levels.
+
+````{r glimpse_data}
+glimpse(df_tbl)
+````
+
+We see that we have two `chr` columns and two `dttm` columns. We will factor the `chr` columns and keep the `dttm` columns for now.
+
+```{r chr_to_fct}
+df_fct_tbl <- df_tbl %>%
+  mutate(across(where(is.character), as.factor))
+```
+
+The package `DataExplorer` helps us to explore the data class structure visually:
+
+```{r vis_data}
+#vis_dat(df_fct_tbl, warn_large_data = FALSE)
+
+plot_intro(df_fct_tbl)
+```
