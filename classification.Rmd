@@ -157,7 +157,8 @@ Now lets take a look at the class balance:
 df_imp_tbl %>%
   ggplot(aes(denial_flag, fill = factor(denial_flag))) +
   geom_bar() +
-  theme_tq()
+  theme_tq() + 
+  scale_fill_tq()
 ```
 
 We can see that the variable we are trying to predict (denial_flag) is severly imbalanced. This will cause problems when trying to make predictions on this variable so we must even out the sampling. We can do this with the `ROSE` algorithm.
@@ -171,7 +172,8 @@ df_balanced_tbl <- ovun.sample(
 df_balanced_tbl %>%
   ggplot(aes(denial_flag, fill = factor(denial_flag))) +
   geom_bar() +
-  theme_tq()
+  theme_tq() + 
+  scale_fill_tq()
 ```
 
 Now lets create our splits object and our taining and testing data sets.
