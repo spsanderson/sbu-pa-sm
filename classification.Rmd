@@ -77,7 +77,7 @@ To get a first impression of the data we take a look at the top 4 rows:
 df_tbl %>% 
   slice_head(n = 4) %>% 
   gt()
-````
+```
 
 ## 2.3 Format data
 
@@ -87,15 +87,15 @@ Numeric variables should be formatted as integers (int) or double precision floa
 
 Categorical (nominal and ordinal) variables should usually be formatted as factors (fct) and not characters (chr). Especially, if they don’t have many levels.
 
-````{r glimpse_data}
+```{r glimpse_data}
 glimpse(df_tbl)
-````
+```
 
 We see that we have two `chr` columns and two `dttm` columns. We will factor the `chr` columns and keep the `dttm` columns for now.
 
 ```{r chr_to_fct}
 df_fct_tbl <- df_tbl %>%
-  mutate(across(where(is.character), as.factor))
+  mutate(across(where(is.character), as_factor))
 ```
 
 The package `DataExplorer` helps us to explore the data class structure visually:
@@ -104,4 +104,17 @@ The package `DataExplorer` helps us to explore the data class structure visually
 #vis_dat(df_fct_tbl, warn_large_data = FALSE)
 
 plot_intro(df_fct_tbl)
+```
+
+Lets check on where the missing values are:
+
+```{r missing_viz}
+plot_missing(df_fct_tbl)
+```
+
+So we see that the only column that has missing values is `total_payment_amount` from our experience we know that these can be imputed to $0.00.
+
+```{r tot_pay_amt_zero}
+df_imp_tbl <- df_fct_tbl %>%
+  mutate(total_payment_amount = ifelse(is.na(total_payment_amount), 0, total_payment_amount))
 ```
