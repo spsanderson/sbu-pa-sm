@@ -98,6 +98,8 @@ We see that we have two `chr` columns and two `dttm` columns. We will factor the
 ```{r chr_to_fct}
 df_fct_tbl <- df_tbl %>%
   mutate(across(where(is.character), as_factor)) %>%
+  mutate(denial_flag = as_factor(denial_flag)) %>%
+  mutate(los_outlier_flag = as_factor(los_outlier_flag)) %>%
   mutate(service_line = fct_lump_prop(service_line, prop = 0.015))
 ```
 
@@ -183,12 +185,61 @@ Now lets create our splits object and our taining and testing data sets.
 # This enables the analysis to be reproducible 
 set.seed(123)
 
-# Put 3/4 of the data into the training set 
+# Put 80% of the data into the training set 
 data_split <- initial_split(df_balanced_tbl, 
                            prop = 0.8, 
                            strata = denial_flag)
 
 # Create dataframes for the two sets:
 train_data <- training(data_split) 
-test_data <- testing(data_split)
+test_data  <- testing(data_split)
+```
+
+## 2.8 Data Exploration
+
+The point of data exploration is to gain insights that will help you select important variables for your model and to get ideas for feature engineering in the data preparation phase. Usually, data exploration is an iterative process: once you get a prototype model up and running, you can analyze its output to gain more insights and come back to this exploration step. It is important to note that we perform data exploration only with our training data.
+
+### 2.8.1 Create copy of training data
+
+```{r copy_train}
+train_tbl <- train_data
+```
+
+Lets create a function that will pass in predictors and give us boxplots back.
+
+```{r print_boxplot}
+print_boxplot <- function(.y_var){
+  
+  # convert strings to variable
+  y_var <- sym(.y_var) 
+ 
+  # unquote variables using {{}}
+  train_tbl %>% 
+  ggplot(
+    aes(
+      x = denial_flag
+      , y = {{y_var}}
+      , fill = denial_flag
+      , color = denial_flag
+      )
+    ) +
+  geom_boxplot(alpha=0.4) 
+  
+} 
+```
+
+### 2.8.2 Obtain Numeric Vars
+
+Obtain all the names we want for our plots:
+
+```{r y_vars}
+y_var <-  train_tbl %>% 
+  select(where(is.numeric)) %>% 
+  variable.names()
+```
+
+View plots:
+
+```{r view_print_boxplots}
+map(y_var, print_boxplot)
 ```
