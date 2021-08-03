@@ -243,3 +243,15 @@ View plots:
 ```{r view_print_boxplots}
 map(y_var, print_boxplot)
 ```
+
+Additionally, we can use the function ggscatmat to create plots with our dependent variable as color column:
+
+```{r ggscatmat}
+train_tbl %>% 
+  select(where(is.numeric), denial_flag) %>% 
+  ggscatmat(
+    color       = "denial_flag"
+    , corMethod = "spearman"
+    , alpha     = 0.2
+  )
+```
