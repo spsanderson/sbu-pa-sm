@@ -95,7 +95,8 @@ We see that we have two `chr` columns and two `dttm` columns. We will factor the
 
 ```{r chr_to_fct}
 df_fct_tbl <- df_tbl %>%
-  mutate(across(where(is.character), as_factor))
+  mutate(across(where(is.character), as_factor)) %>%
+  mutate(service_line = fct_lump_lowfreq(service_line))
 ```
 
 The package `DataExplorer` helps us to explore the data class structure visually:
@@ -117,4 +118,28 @@ So we see that the only column that has missing values is `total_payment_amount`
 ```{r tot_pay_amt_zero}
 df_imp_tbl <- df_fct_tbl %>%
   mutate(total_payment_amount = ifelse(is.na(total_payment_amount), 0, total_payment_amount))
+```
+
+```{r svc_line_denials}
+df_imp_tbl %>% 
+  count(service_line, name = "total_visits")  %>%
+  arrange(desc(total_visits)) %>%
+  mutate(percent = round(total_visits / sum(total_visits) * 100, 2)) %>%
+  mutate(cum_perc = cumsum(percent)) %>%
+  gt() %>%
+  cols_label(
+    service_line   = "Service Line"
+    , total_visits = "Visits"
+    , percent      = "Percent %"
+    , cum_perc     = "Cumulative %"
+  ) %>%
+  fmt_number(
+    columns = c(total_visits),
+    suffixing = TRUE
+  ) %>%
+  cols_align(align = "left", columns = c(service_line))
+```
+
+```{r skim_dataq}
+skim(df_imp_tbl)
 ```
