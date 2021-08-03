@@ -255,3 +255,37 @@ train_tbl %>%
     , alpha     = 0.2
   )
 ```
+
+The function geom_bin2d() creats a heatmap by counting the number of cases in each group, and then mapping the number of cases to each subgroub’s fill. Lets check them out.
+
+```{r print_categorical_heatmap}
+print_categorical_heatmap <- function(.y_var){
+  
+  # convert strings to variable
+  y_var <- sym(.y_var) 
+ 
+  # unquote variables using {{}}
+  train_tbl %>% 
+    ggplot(
+      aes(
+        x = denial_flag
+        , y = {{y_var}}
+      )
+    ) +
+    geom_bin2d() +
+    scale_fill_continuous(type = "viridis") +
+    theme_tq()
+  
+}
+
+```
+
+```{r}
+y_vars <- train_tbl %>% 
+  select(where(is.factor), -denial_flag) %>% 
+  variable.names()
+```
+
+```{r view_print_cat_heatmap}
+map(y_vars, print_categorical_heatmap)
+```
