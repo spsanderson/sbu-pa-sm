@@ -35,7 +35,9 @@ pacman::p_load(
     "skimr",
     "GGally",
     "purrr",
-    "DataExplorer"
+    "DataExplorer",
+    "ROSE",
+    "tidyquant"
 )
 ```
 
@@ -96,7 +98,7 @@ We see that we have two `chr` columns and two `dttm` columns. We will factor the
 ```{r chr_to_fct}
 df_fct_tbl <- df_tbl %>%
   mutate(across(where(is.character), as_factor)) %>%
-  mutate(service_line = fct_lump_lowfreq(service_line))
+  mutate(service_line = fct_lump_prop(service_line, prop = 0.015))
 ```
 
 The package `DataExplorer` helps us to explore the data class structure visually:
@@ -107,6 +109,7 @@ The package `DataExplorer` helps us to explore the data class structure visually
 plot_intro(df_fct_tbl)
 ```
 
+## 2.4 Missing data
 Lets check on where the missing values are:
 
 ```{r missing_viz}
@@ -140,6 +143,33 @@ df_imp_tbl %>%
   cols_align(align = "left", columns = c(service_line))
 ```
 
+## 2.5 Data overview
+
 ```{r skim_dataq}
 skim(df_imp_tbl)
+```
+
+## 2.5 Data splitting
+
+Now lets take a look at the class balance:
+
+```{r class_balance}
+df_imp_tbl %>%
+  ggplot(aes(denial_flag, fill = factor(denial_flag))) +
+  geom_bar() +
+  theme_tq()
+```
+
+We can see that the variable we are trying to predict (denial_flag) is severly imbalanced. This will cause problems when trying to make predictions on this variable so we must even out the sampling. We can do this with the `ROSE` algorithm.
+
+```{r rose_data}
+df_balanced_tbl <- ovun.sample(
+  denial_flag ~.
+  , data = df_imp_tbl
+)$data
+
+df_balanced_tbl %>%
+  ggplot(aes(denial_flag, fill = factor(denial_flag))) +
+  geom_bar() +
+  theme_tq()
 ```
