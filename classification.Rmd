@@ -735,7 +735,7 @@ Take a look at the confusion matrix:
 ```{r last_fit_rf_conf_mat}
 last_fit_rf %>%
   collect_predictions() %>% 
-  conf_mat(denial_flag, .pred_0) %>% 
+  conf_mat(denial_flag, .pred_class) %>% 
   autoplot(type = "heatmap")
 ```
 
@@ -744,7 +744,8 @@ Let’s create the ROC curve. Again, since the event we are predicting is the fi
 ```{r last_fit_rf_roc}
 last_fit_rf %>% 
   collect_predictions() %>% 
-  roc_curve(denial_flag, .pred_0) %>% 
+  mutate(.pred_class = as.integer(.pred_class)) %>%
+  roc_curve(denial_flag, .pred_class) %>% 
   autoplot()
 ```
 
