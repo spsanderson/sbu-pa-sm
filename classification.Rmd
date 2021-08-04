@@ -740,12 +740,6 @@ rf_metrics <-
   collect_metrics(summarise = TRUE) %>%
   mutate(model = "Random Forest")
 
-# Model failed all cv
-# xgb_metrics <-
-#   xgb_res %>%
-#   collect_metrics(summarise = TRUE) %>%
-#   mutate(model = "XGBoost")
-
 knn_metrics <-
   knn_res %>%
   collect_metrics(summarise = TRUE) %>%
@@ -754,7 +748,6 @@ knn_metrics <-
 # create dataframe with all models
 model_compare <- bind_rows(log_metrics,
                            rf_metrics,
-                           #xgb_metrics,
                            knn_metrics,)
 
 # change data structure
@@ -826,11 +819,26 @@ And these are our final performance metrics. Remember that if a model fit to the
 
 To learn more about the model we can access the variable importance scores via the .workflow column. We first need to pluck out the first element in the workflow column, then pull out the fit from the workflow object. Finally, the vip package helps us visualize the variable importance scores for the top features. Note that we can’t create this type of plot for every model engine.
 
-library(vip)
-
+```{r vip}
 last_fit_rf %>% 
   pluck(".workflow", 1) %>%   
   pull_workflow_fit() %>% 
   vip(num_features = 10)
+```
+
+Take a look at the confusion matrix:
+
+```{r last_fit_rf_conf_mat}
+last_fit_rf %>%
+  collect_predictions() %>% 
+  conf_mat(price_category, .pred_class) %>% 
+  autoplot(type = "heatmap")
+```
+
+
+
+
+
+
 
 https://www.kirenz.com/post/2021-02-17-r-classification-tidymodels/#data-understanding
