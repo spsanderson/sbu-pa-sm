@@ -625,5 +625,22 @@ log_pred %>%
   conf_mat(denial_flag, .pred_class) 
 ```
 
+Additionally, the confusion matrix can quickly be visualized in different formats using autoplot(). Type mosaic:
+
+```{r conf_marix_viz}
+log_pred %>% 
+  conf_mat(denial_flag, .pred_class) %>% 
+  autoplot(type = "mosaic")
+```
+
+Or type heatmap:
+
+```{r log_pred_heatmap}
+log_pred %>% 
+  conf_mat(denial_flag, .pred_class) %>% 
+  autoplot(type = "heatmap")
+```
+
+
 
 https://www.kirenz.com/post/2021-02-17-r-classification-tidymodels/#data-understanding
