@@ -47,7 +47,7 @@ In our example, the goal is to build a classification model to predict an accoun
 
 Let’s assume that the model’s output will be fed to another analytics system, along with other data. This downstream system will determine whether it is worth investing in a given area or not. The data processing components (also called data pipeline) are shown in the figure below (you can use Google’s architectural templates to draw a data pipeline).
 
-# 2 Data understanding
+# 2 Data Understanding
 
 In Data Understanding, you:
 
@@ -65,8 +65,14 @@ First of all, let’s import the data:
 
 ```{r data}
 df_tbl <- healthyR_data %>%
-    select(-mrn, -visit_id, -expected_length_of_stay, -length_of_stay_threshold, 
-           -readmit_expectation, -total_amount_due) %>%
+    select(
+      -mrn
+      , -visit_id
+      , -expected_length_of_stay
+      , -length_of_stay_threshold
+      , -readmit_expectation
+      , -total_amount_due
+    ) %>%
     rename(denial_flag = readmit_flag)
 ```
 
@@ -178,7 +184,7 @@ df_balanced_tbl %>%
   scale_fill_tq()
 ```
 
-Now lets create our splits object and our taining and testing data sets.
+Now lets create our splits object and our training and testing data sets.
 
 ```{r split_object}
 # Fix the random numbers by setting the seed 
@@ -244,19 +250,19 @@ View plots:
 map(y_var, print_boxplot)
 ```
 
-Additionally, we can use the function ggscatmat to create plots with our dependent variable as color column:
+<!-- Additionally, we can use the function ggscatmat to create plots with our dependent variable as color column: -->
 
-```{r ggscatmat}
-train_tbl %>% 
-  select(where(is.numeric), denial_flag) %>% 
-  ggscatmat(
-    color       = "denial_flag"
-    , corMethod = "spearman"
-    , alpha     = 0.2
-  )
-```
+<!-- ```{r ggscatmat} -->
+<!-- train_tbl %>%  -->
+<!--   select(where(is.numeric), denial_flag) %>%  -->
+<!--   ggscatmat( -->
+<!--     color       = "denial_flag" -->
+<!--     , corMethod = "spearman" -->
+<!--     , alpha     = 0.2 -->
+<!--   ) -->
+<!-- ``` -->
 
-The function geom_bin2d() creats a heatmap by counting the number of cases in each group, and then mapping the number of cases to each subgroub’s fill. Lets check them out.
+The function geom_bin2d() creates a heatmap by counting the number of cases in each group, and then mapping the number of cases to each subgroub’s fill. Lets check them out.
 
 ```{r print_categorical_heatmap}
 print_categorical_heatmap <- function(.y_var){
@@ -289,3 +295,118 @@ y_vars <- train_tbl %>%
 ```{r view_print_cat_heatmap}
 map(y_vars, print_categorical_heatmap)
 ```
+
+# 3 Data Preperation
+
+Data preparation:
+
+  + Handle missing values
+  + Fix or remove outliers
+  + Feature selection
+  + Feature engineering
+  + Feature scaling
+  + Create a validation set
+  
+Next, we’ll preprocess our data before training the models. We mainly use the tidymodels packages recipes and workflows for this steps. Recipes are built as a series of optional data preparation steps, such as:
+
+Data cleaning: Fix or remove outliers, fill in missing values (e.g., with zero, mean, median…) or drop their rows (or columns).
+
+Feature selection: Drop the attributes that provide no useful information for the task.
+
+Feature engineering: Discretize continuous features, decompose features (e.g., the weekday from a date variable, etc.), add promising transformations of features (e.g., log(x), sqrt(x), x2 , etc.) or aggregate features into promising new features (like we already did).
+
+Feature scaling: Standardize or normalize features.
+
+We will want to use our recipe across several steps as we train and test our models. To simplify this process, we can use a model workflow, which pairs a model and recipe together.
+
+## 3.1 Data preparation
+
+We have already created our `splits` object `data_split`
+
+```{r splits_object}
+data_split
+```
+
+## 3.2 Data prepropecessing recipe
+
+The type of data preprocessing is dependent on the data and the type of model being fit. The excellent book “Tidy Modeling with R” provides an appendix with recommendations for baseline levels of preprocessing that are needed for various model functions.
+
+Let’s create a base recipe for all of our classification models. Note that the sequence of steps matter:
+
+  + The recipe() function has two arguments:
+
+    + A formula. Any variable on the left-hand side of the tilde (~) is considered the model outcome (here, denial_flag). On the right-hand side of the tilde are the predictors. Variables may be listed by name (separated by a +), or you can use the dot (.) to indicate all other variables as predictors.
+
+    + The data. A recipe is associated with the data set used to create the model. This will typically be the training set, so data = train_data here.
+    
+  + update_role(): This step of adding roles to a recipe is optional; the purpose of using it here is that those two variables can be retained in the data but not included in the model. This can be convenient when, after the model is fit, we want to investigate some poorly predicted value. These ID columns will be available and can be used to try to understand what went wrong.
+
+  + step_naomit() removes observations (rows of data) if they contain NA or NaN values. We use skip = TRUE because we don’t want to perform this part to new data so that the number of samples in the assessment set is the same as the number of predicted values (even if they are NA).
+
+Note that instead of deleting missing values we could also easily substitute (i.e., impute) missing values of variables by one of the following methods (using the training set):
+
+  + median
+  + mean
+  + mode
+  + k-nearest neighbors
+  + linear model
+  + bagged tree models
+
+Take a look at the recipes reference for an overview about all possible imputation methods.
+
+  + step_novel() converts all nominal variables to factors and takes care of other issues related to categorical variables.
+
+  + step_log() will log transform data (since some of our numerical variables are right-skewed). Note that this step can not be performed on negative numbers.
+
+  + step_normalize() normalizes (center and scales) the numeric variables to have a standard deviation of one and a mean of zero. (i.e., z-standardization).
+
+  + step_dummy() converts our factor column ocean_proximity into numeric binary (0 and 1) variables.
+
+Note that this step may cause problems if your categorical variable has too many levels - especially if some of the levels are very infrequent. In this case you should either drop the variable or pool infrequently occurring values into an “other” category with step_other. This steps has to be performed before step_dummy.
+
+  + step_zv(): removes any numeric variables that have zero variance.
+
+  + step_corr(): will remove predictor variables that have large correlations with other predictor variables.
+  
+We have already used the `ROSE` package to create a balanced data set and used that to make our splits so we can go ahead and create our recipe now.
+
+```{r recipe_object}
+denial_rec <- recipe(
+  denial_flag ~ .,
+  data = train_data
+)%>% 
+  step_log(total_charge_amount) %>% 
+  step_naomit(everything(), skip = TRUE) %>% 
+  step_novel(all_nominal(), -all_outcomes()) %>%
+  step_normalize(all_numeric(), -all_outcomes()) %>% 
+  step_dummy(all_nominal(), -all_outcomes()) %>%
+  step_zv(all_numeric(), -all_outcomes()) %>%
+  step_corr(all_numeric_predictors(), threshold = 0.7, method = "spearman")
+```
+
+To view the current set of variables and roles, use the summary() function: `summary(housing_rec)`
+
+```{r summary_rec_obj}
+summary(denial_rec)
+```
+
+If we would like to check if all of our preprocessing steps from above actually worked, we can proceed as follows:
+
+```{r juice_rec_obj}
+prepped_data <- 
+  denial_rec %>% # use the recipe object
+  prep() %>%     # perform the recipe on training data
+  juice()        # extract only the pre-processed data.frame 
+
+prepped_data %>% glimpse()
+```
+
+## 3.3 Validation set
+
+Remember that we already partitioned our data set into a training set and test set. This lets us judge whether a given model will generalize well to new data. However, using only two partitions may be insufficient when doing many rounds of hyperparameter tuning (which we don’t perform in this tutorial but it is always recommended to use a validation set).
+
+Therefore, it is usually a good idea to create a so called validation set. Watch this short video from Google’s Machine Learning crash course to learn more about the value of a validation set.
+
+We use k-fold crossvalidation to build a set of 5 validation folds with the function vfold_cv. We also use stratified sampling:
+
+https://www.kirenz.com/post/2021-02-17-r-classification-tidymodels/#data-understanding
