@@ -474,19 +474,125 @@ knn_spec <-
   set_mode("classification")
 ```
 
-4.2 Create workflows
+## 4.2 Create workflows
+
 To combine the data preparation recipe with the model building, we use the package workflows. A workflow is an object that can bundle together your pre-processing recipe, modeling, and even post-processing requests (like calculating the RMSE).
 
-4.2.1 Logistic regression
+### 4.2.1 Logistic regression
+
 Bundle recipe and model with workflows:
 
+```{r logistic_wflw}
 log_wflow <- # new workflow object
  workflow() %>% # use workflow function
- add_recipe(housing_rec) %>%   # use the new recipe
+ add_recipe(denial_rec) %>%   # use the new recipe
  add_model(log_spec)   # add your model spec
 
 # show object
 log_wflow
+```
+
+###4.2.2 Random forest
+
+Bundle recipe and model:
+
+```{r rf_wflw}
+rf_wflow <-
+ workflow() %>%
+ add_recipe(denial_rec) %>% 
+ add_model(rf_spec)
+```
+
+### 4.2.3 XGBoost
+
+Bundle recipe and model:
+
+```{r xgb_wflw}
+xgb_wflow <-
+ workflow() %>%
+ add_recipe(denial_rec) %>% 
+ add_model(xgb_spec)
+```
+
+### 4.2.4 K-nearest neighbor
+
+Bundle recipe and model:
+
+```{r knn_wflw}
+knn_wflow <-
+ workflow() %>%
+ add_recipe(denial_rec) %>% 
+ add_model(knn_spec)
+```
+
+## 4.3 Evaluate models
+
+Now we can use our validation set (cv_folds) to estimate the performance of our models using the fit_resamples() function to fit the models on each of the folds and store the results.
+
+Note that fit_resamples() will fit our model to each resample and evaluate on the heldout set from each resample. The function is usually only used for computing performance metrics across some set of resamples to evaluate our models (like accuracy) - the models are not even stored. However, in our example we save the predictions in order to visualize the model fit and residuals with control_resamples(save_pred = TRUE).
+
+Finally, we collect the performance metrics with collect_metrics() and pick the model that does best on the validation set.
+
+### 4.3.1 Logistic regression
+
+We use our workflow object to perform resampling. Furthermore, we use metric_set()to choose some common classification performance metrics provided by the yardstick package. Visit yardsticks reference to see the complete list of all possible metrics.
+
+Note that Cohen’s kappa coefficient (κ) is a similar measure to accuracy, but is normalized by the accuracy that would be expected by chance alone and is very useful when one or more classes have large frequency distributions. The higher the value, the better.
+
+```{r log_res}
+log_res <- 
+  log_wflow %>% 
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap, roc_auc
+      , sens, spec
+    ),
+    control = control_resamples(
+      save_pred = TRUE)
+    ) 
+```
+
+#### 4.3.1.1 Model coefficients
+
+The above described method to obtain log_res is fine if we are not interested in model coefficients. However, if we would like to extract the model coeffcients from fit_resamples, we need to proceed as follows:
+
+__save model coefficients for a fitted model object from a workflow__
+
+```{r get_model}
+get_model <- function(x) {
+  pull_workflow_fit(x) %>% tidy()
+}
+
+# same as before with one exception
+log_res_2 <- 
+  log_wflow %>% 
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(
+      save_pred = TRUE,
+      extract = get_model) # use extract and our new function
+    )
+```
+
+Now there is a `.extracts` column with nested tibbles. 
+
+```{r}
+log_res_2$.extracts[[1]]
+
+log_res_2$.extracts[[1]][[1]]
+
+all_coef <- map_dfr(log_res_2$.extracts, ~ .x[[1]][[1]])
+
+all_coef
+```
+
+
 
 
 https://www.kirenz.com/post/2021-02-17-r-classification-tidymodels/#data-understanding
