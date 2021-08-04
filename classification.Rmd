@@ -668,7 +668,60 @@ log_pred %>%
   theme_tq()
 ```
 
+### 4.3.2 Random forest
 
+We don’t repeat all of the steps shown in logistic regression and just focus on the performance metrics.
+
+```{r rf_res}
+rf_res <-
+  rf_wflow %>% 
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+rf_res %>%  collect_metrics(summarize = TRUE)
+```
+
+### 4.3.3 XGBoost
+We don’t repeat all of the steps shown in logistic regression and just focus on the performance metrics.
+
+```{r xgb_res}
+xgb_res <- 
+  xgb_wflow %>% 
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+xgb_res %>% collect_metrics(summarize = TRUE)
+```
+
+### 4.3.4 K-nearest neighbor
+We don’t repeat all of the steps shown in logistic regression and just focus on the performance metrics.
+
+```{r knn_res}
+knn_res <- 
+  knn_wflow %>% 
+  fit_resamples(
+    resamples = cv_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+knn_res %>% collect_metrics(summarize = TRUE)
+```
 
 
 https://www.kirenz.com/post/2021-02-17-r-classification-tidymodels/#data-understanding
