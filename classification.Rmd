@@ -831,14 +831,16 @@ Take a look at the confusion matrix:
 ```{r last_fit_rf_conf_mat}
 last_fit_rf %>%
   collect_predictions() %>% 
-  conf_mat(price_category, .pred_class) %>% 
+  conf_mat(denial_flag, .pred_0) %>% 
   autoplot(type = "heatmap")
 ```
 
+Let’s create the ROC curve. Again, since the event we are predicting is the first level in the price_category factor (“0 - not denied”), we provide roc_curve() with the relevant class probability .pred_0:
 
+```{r last_fit_rf_roc}
+last_fit_rf %>% 
+  collect_predictions() %>% 
+  roc_curve(denial_flag, .pred_0) %>% 
+  autoplot()
+```
 
-
-
-
-
-https://www.kirenz.com/post/2021-02-17-r-classification-tidymodels/#data-understanding
