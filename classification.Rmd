@@ -652,4 +652,23 @@ log_pred %>%
   autoplot()
 ```
 
+#### 4.3.1.6 Probability distributions
+
+Plot predicted probability distributions for our two classes.
+
+```{r pred_prob_dist}
+log_pred %>% 
+  ggplot() +
+  geom_density(
+    aes(
+      x = .pred_0
+      , fill = denial_flag)
+    , alpha = 0.5
+  ) +
+  theme_tq()
+```
+
+
+
+
 https://www.kirenz.com/post/2021-02-17-r-classification-tidymodels/#data-understanding
