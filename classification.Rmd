@@ -641,6 +641,15 @@ log_pred %>%
   autoplot(type = "heatmap")
 ```
 
+#### 4.3.1.5 ROC-Curve
 
+We can also make an ROC curve for our 5 folds. Since the category we are predicting is the first level in the denial_flag factor (“0 - not_denied”), we provide roc_curve() with the relevant class probability .pred_0:
+
+```{r log_pred_roc}
+log_pred %>% 
+  group_by(id) %>% # id contains our folds
+  roc_curve(denial_flag, .pred_0) %>% 
+  autoplot()
+```
 
 https://www.kirenz.com/post/2021-02-17-r-classification-tidymodels/#data-understanding
