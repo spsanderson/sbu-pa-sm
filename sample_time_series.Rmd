@@ -631,11 +631,20 @@ refit_tbl <- calibration_tbl %>%
 
 ```{r}
 refit_tbl %>%
-    modeltime_forecast(
-        new_data = forecast_tbl,
-        actual_data = data_prepared_tbl,
-        conf_by_id = TRUE
-    ) %>%
+  modeltime_forecast(new_data = forecast_tbl,
+                     actual_data = data_prepared_tbl,
+                     conf_by_id = TRUE) %>%
   group_by(id) %>%
-    plot_modeltime_forecast(.facet_ncol = 2)
+  
+  # Invert Transformation
+  mutate(across(
+    .value:.conf_hi,
+    .fns = ~ standardize_inv_vec(
+      x    = .,
+      mean = c(mean_a, mean_b, mean_c, mean_d),
+      sd   = c(sd_a, sd_b, sd_c, sd_d)
+    )
+  )) %>%
+  mutate(across(.value:.conf_hi, .fns = exp)) %>%
+  plot_modeltime_forecast(.facet_ncol = 2)
 ```
