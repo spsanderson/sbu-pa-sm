@@ -40,7 +40,8 @@ pacman::p_load(
     "tidyquant",
     "ranger",
     "xgboost",
-    "vip"
+    "vip",
+    "kknn"
 )
 ```
 
