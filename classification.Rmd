@@ -606,8 +606,24 @@ Show performance for every single fold:
 log_res %>%  collect_metrics(summarize = FALSE)
 ```
 
+#### 4.3.1.3 Collect predictions
 
+To obtain the actual model predictions, we use the function collect_predictions and save the result as log_pred:
 
+```{r log_pred}
+log_pred <- 
+  log_res %>%
+  collect_predictions()
+```
+
+#### 4.3.1.4 Confusion matrix
+
+Now we can use the predictions to create a confusion matrix with conf_mat():
+
+```{r log_conf_matrix}
+log_pred %>% 
+  conf_mat(denial_flag, .pred_class) 
+```
 
 
 https://www.kirenz.com/post/2021-02-17-r-classification-tidymodels/#data-understanding
